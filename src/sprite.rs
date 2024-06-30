@@ -31,5 +31,6 @@ impl Sprite {
 
         self.frame_vec.get_frame().get(w, h) 
     }
+
 }
 

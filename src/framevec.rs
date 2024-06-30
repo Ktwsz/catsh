@@ -24,7 +24,7 @@ impl FrameVec {
             for img_frame in 0..frame_count {
                 frame_vec.frames.push(Texture::from_image(&img, img_frame, frame_count));
             }
-        } 
+        }
 
         Ok(frame_vec)
     }
