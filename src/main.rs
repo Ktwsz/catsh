@@ -1,3 +1,10 @@
+pub mod sprite;
+pub mod framevec;
+pub mod texture;
+
+use sprite::Sprite;
+use texture::TexturePixel;
+
 use std::io::{self, Write, Stdout};
 use crossterm::{
     ExecutableCommand, QueueableCommand,
@@ -6,11 +13,13 @@ use crossterm::{
 };
 use crossterm::event::{Event, KeyCode};
 use std::time;
-pub mod sprite_loader;
-use sprite_loader::Sprite;
+
+const FILEPATH: &str = "cats/Cat-1/Cat-1-Run.png";
+const FRAMES: u32 = 8;
+
 
 fn main() -> io::Result<()>{
-    let mut sprite = sprite_loader::load_data().unwrap();
+    let mut sprite = Sprite::new(0, 0, 30, 30, FILEPATH, FRAMES);
 
     let fps = 60.0;
     let tick_rate = time::Duration::from_millis(f64::floor(1000.0 / fps) as u64);
@@ -45,7 +54,7 @@ fn main() -> io::Result<()>{
             if (delay_done && animation_ctr == 5) || (!delay_done && animation_ctr == animation_delay) {
                 animation_ctr = 0;
                 delay_done = true;
-                sprite.next_frame();
+                sprite.frame_vec.next_frame();
                 sprite.x += 10;
             }
         }
@@ -76,7 +85,7 @@ fn draw_square(stdout: &mut Stdout, sprite: &Sprite, terminal_size: &(u16, u16))
             }
 
 
-            if let Some((color, c)) = sprite.get(w, h) { 
+            if let &TexturePixel(Some((color, c))) = sprite.pixel_at(w, h) { 
                 stdout
                     .queue(cursor::MoveTo(coord.0 as u16, coord.1 as u16))?
                     .queue(style::SetForegroundColor(color))?
