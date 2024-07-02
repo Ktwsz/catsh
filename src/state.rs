@@ -23,11 +23,11 @@ pub struct State {
 }
 
 impl State {
-    pub fn new() -> Self {
+    pub fn new(sprite_show: crate::ShowSprite) -> Self {
         State {
             sprites: vec![
-                Sprite::new(-30, 0, 30, 30, CAT_YELLOW, CAT_YELLOW_FRAMES),
-                Sprite::new(30, 10, 50, 50, CAT_BLACK, CAT_BLACK_FRAMES),
+                Sprite::new(CAT_YELLOW, CAT_YELLOW_FRAMES, sprite_show).set_pos(-30, 0),
+                Sprite::new(CAT_BLACK, CAT_BLACK_FRAMES, sprite_show).set_pos(30, 10),
             ],
 
             animation_ctr: 0,

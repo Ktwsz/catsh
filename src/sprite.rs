@@ -11,25 +11,36 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub fn new(x: i32, y:i32, width: u32, height: u32, texture_path: &str, frame_count: u32) -> Self {
-        let frame_vec = FrameVec::from_image(texture_path, frame_count).unwrap();
+    pub fn new(texture_path: &str, frame_count: u32, sprite_show: crate::ShowSprite) -> Self {
+        let frame_vec = FrameVec::from_image(texture_path, frame_count, sprite_show).unwrap();
 
 
         Sprite {
-            x, y,
-            //width: frame_vec.frame_width(),
-            //height: frame_vec.frame_height(),
-            width,
-            height,
+            x: 0,
+            y: 0,
+            width: frame_vec.frame_width(),
+            height: frame_vec.frame_height(),
             frame_vec,
         }
     }
 
-    pub fn pixel_at(&self, x: u32, y: u32) -> &TexturePixel {
-        let w = x as f64 / self.width as f64;
-        let h = y as f64 / self.height as f64;
+    pub fn set_pos(mut self, x: i32, y: i32) -> Self {
+        self.x = x;
+        self.y = y;
 
-        self.frame_vec.get_frame().get(w, h) 
+        self
+    }
+
+
+    pub fn resize(self, width: u32, height: u32) -> Self {
+        self
+    }
+
+    pub fn pixel_at(&self, x: u32, y: u32) -> &TexturePixel {
+        let w = x;
+        let h = y;
+
+        self.frame_vec.get_frame().get(w as i32, h as i32) 
     }
 
 }

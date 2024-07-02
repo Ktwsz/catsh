@@ -11,7 +11,7 @@ pub struct FrameVec {
 }
 
 impl FrameVec {
-    pub fn from_image(img_path: &str, frame_count: u32) -> Result<Self, ImageError> {
+    pub fn from_image(img_path: &str, frame_count: u32, sprite_show: crate::ShowSprite) -> Result<Self, ImageError> {
         let mut frame_vec = FrameVec {
             frames: Vec::new(),
             current_frame: 0,
@@ -22,7 +22,7 @@ impl FrameVec {
 
         if let ImageRgba8(img) = dyn_img {
             for img_frame in 0..frame_count {
-                frame_vec.frames.push(Texture::from_image(&img, img_frame, frame_count));
+                frame_vec.frames.push(Texture::from_image(&img, img_frame, frame_count, sprite_show));
             }
         }
 
