@@ -52,6 +52,14 @@ impl <T> TexturePixel<T> {
         TexturePixel(None)
     }
 
+    fn is_empty(&self) -> bool {
+        if let TexturePixel(None) = self {
+            true
+        } else {
+            false
+        }
+    }
+
     fn map<U, F>(&self, f: F) -> TexturePixel<U>
         where F: FnOnce((T, char)) -> (U, char),
               T: Copy {
@@ -116,6 +124,9 @@ impl Texture {
             Final => *self.get(x, y),
             Sobel => {
                 let ix = (self.height as i32 * x + y) as usize;
+                if self.data[ix].is_empty() {
+                    return TexturePixel::empty();
+                }
 
                 let pixel_color = &self.data[ix].color_or(Color::Black);
                 let pixel_char = &self.data[ix].char_or(' ');
@@ -146,8 +157,8 @@ fn sobel_transform(grayscale_texture: &Texture<GrayScale>, kernel_x: &[[f64; 3];
     let x = convolute_transform(kernel_x, grayscale_texture, i).color_or(0.0);
     let y = convolute_transform(kernel_y, grayscale_texture, i).color_or(0.0);
 
-    let threshold = 0.1;
-    if f64::sqrt(x*x + y*y) < threshold {
+    let threshold = 100000.0;
+    if x*x + y*y < threshold {
         return TexturePixel::empty();
     }
 
