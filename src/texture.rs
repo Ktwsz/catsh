@@ -108,15 +108,29 @@ impl Texture {
 
         texture
     }
+
+    pub fn get_draw_pixel(&self, x: i32, y: i32) -> TexturePixel {
+        let ix = (self.height as i32 * x + y) as usize;
+
+        let pixel_color = &self.data[ix].color_or(Color::Black);
+        let pixel_char = &self.data[ix].char_or(' ');
+
+        let edge_piece = &self.edge_texture[ix].char_or(*pixel_char);
+
+
+        TexturePixel::new_tuple(*pixel_color, *edge_piece)
+    }
 }    
 
 impl <T> Texture<T> {
     pub fn get(&self, x: i32, y: i32) -> &TexturePixel<T> {
-        &self.data[(self.height as i32 * y + x) as usize]
+        let ix = self.height as i32 * x + y;
+
+        &self.data[ix as usize]
     }
 
     pub fn position(&self, ix: usize) -> (u32, u32) {
-        (ix as u32 % self.height, ix as u32 / self.height)
+        (ix as u32 / self.height, ix as u32 % self.height)
     }
 }
 

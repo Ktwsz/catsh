@@ -36,11 +36,11 @@ impl Sprite {
         self
     }
 
-    pub fn pixel_at(&self, x: u32, y: u32) -> &TexturePixel {
+    pub fn pixel_at(&self, x: u32, y: u32) -> TexturePixel {
         let w = x;
         let h = y;
 
-        self.frame_vec.get_frame().get(w as i32, h as i32) 
+        self.frame_vec.get_frame().get_draw_pixel(w as i32, h as i32) 
     }
 
 }

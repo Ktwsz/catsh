@@ -81,7 +81,7 @@ impl State {
                 }
 
 
-                if let &TexturePixel(Some((color, c))) = sprite.pixel_at(w, h) { 
+                if let TexturePixel(Some((color, c))) = sprite.pixel_at(w, h) { 
                     stdout
                         .queue(cursor::MoveTo(coord.0 as u16, coord.1 as u16))?
                         .queue(style::SetForegroundColor(color))?
