@@ -1,13 +1,25 @@
 use image::{RgbaImage, Rgba};
 use crossterm::style::Color;
 
-//const LIGHNTESS: &str = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'.";
-const LIGHNTESS: &str = "`.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@";
+const LIGHNTESS: &str = ".;coPO?#%@";
 
 type GrayScale = f64;
 
 #[derive(Clone, Copy)]
 pub struct TexturePixel<T = Color>(pub Option<(T, char)>);
+
+#[derive(Clone, Copy)]
+enum EdgePiece {
+    Vertical,
+    Horizontal,
+    DashRight,
+    DashLeft
+}
+
+const HORIZONTAL_CHAR: char = '-';
+const VERTICAL_CHAR: char = '|';
+const DASHRIGHT_CHAR: char = '/';
+const DASHLEFT_CHAR: char = '\\';
 
 impl TexturePixel {
     fn new(pixel: &Rgba<u8>) -> Self {
@@ -19,19 +31,58 @@ impl TexturePixel {
         let char_ix = LIGHNTESS.len() as f64 * (hsl_color.lightness() / 100.0);
 
 
-        TexturePixel(Some((Color::Rgb {
+        let default = LIGHNTESS.chars().nth(LIGHNTESS.len() - 1).unwrap();
+        TexturePixel::new_tuple(Color::Rgb {
             r: pixel[0],
             g: pixel[1],
             b: pixel[2],
-        }, LIGHNTESS.chars().nth(f64::floor(char_ix) as usize).unwrap())))
+        }, LIGHNTESS.chars().nth(f64::floor(char_ix) as usize).unwrap_or(default))
+    }
+}
+
+impl <T> TexturePixel<T> {
+    fn new_tuple(color: T, c: char) -> TexturePixel<T> {
+        TexturePixel(Some((
+            color, c
+        )))
     }
 
+    fn empty() -> TexturePixel<T> {
+        TexturePixel(None)
+    }
+
+    fn map<U, F>(&self, f: F) -> TexturePixel<U>
+        where F: FnOnce((T, char)) -> (U, char),
+              T: Copy {
+        let &TexturePixel(opt) = self;
+        
+        TexturePixel(opt.map(f))
+    }
+
+    fn color_or(&self, default: T) -> T 
+    where T: Copy {
+        if let &TexturePixel::<T>(Some((color, _))) = self {
+            color
+        } else {
+            default
+        }
+    }
+
+    fn char_or(&self, default: char) -> char
+    where T: Copy {
+        if let &TexturePixel::<T>(Some((_, c))) = self {
+            c
+        } else {
+            default
+        }
+    }
 }
 
 pub struct Texture <T = Color> {
     pub width: u32,
     pub height: u32,
     data: Vec <TexturePixel<T>>,
+    edge_texture: Vec<TexturePixel<EdgePiece>>,
 }
 
 impl Texture {
@@ -43,6 +94,7 @@ impl Texture {
             width: frame_width,
             height: frame_height,
             data: Vec::new(),
+            edge_texture: Vec::new(),
         };
 
         for x in 0..frame_width {
@@ -52,9 +104,7 @@ impl Texture {
             }
         }
 
-        if let crate::ShowSprite::Sobel = sprite_show {
-            apply_sobel(&mut texture);
-        }
+        texture.edge_texture = sobel(&texture);
 
         texture
     }
@@ -62,29 +112,54 @@ impl Texture {
 
 impl <T> Texture<T> {
     pub fn get(&self, x: i32, y: i32) -> &TexturePixel<T> {
-        //let scale_x = f64::floor(self.width as f64 * x) as u32;
-        //let scale_y = f64::floor(self.height as f64 * y) as u32;
-        //
-        //let ix = self.height * scale_x + scale_y;
-        //&self.data[ix as usize]
-
         &self.data[(self.height as i32 * y + x) as usize]
     }
 
     pub fn position(&self, ix: usize) -> (u32, u32) {
-        (ix as u32 / self.height, ix as u32 % self.height)
+        (ix as u32 % self.height, ix as u32 / self.height)
     }
 }
 
 
-fn apply_sobel(texture: &mut Texture) {
+fn sobel_transform(grayscale_texture: &Texture<GrayScale>, kernel_x: &[[f64; 3]; 3], kernel_y: &[[f64; 3]; 3], i: usize) -> TexturePixel <EdgePiece> {
+    let x = convolute_transform(kernel_x, grayscale_texture, i).color_or(0.0);
+    let y = convolute_transform(kernel_y, grayscale_texture, i).color_or(0.0);
+
+    let threshold = 0.1;
+    if f64::sqrt(x*x + y*y) < threshold {
+        return TexturePixel::empty();
+    }
+
+    let theta = f64::atan2(y, x);
+    let abs_theta = f64::abs(theta) / std::f64::consts::PI;
+
+    use EdgePiece::*;
+    match abs_theta {
+        v if 0.0 <= v && v < 0.05 => TexturePixel::new_tuple(Horizontal, HORIZONTAL_CHAR),
+        v if 0.9 < v && v <= 1.0 => TexturePixel::new_tuple(Horizontal, HORIZONTAL_CHAR),
+        v if 0.45 < v && v < 0.55 => TexturePixel::new_tuple(Vertical, VERTICAL_CHAR),
+        v if 0.05 < v && v < 0.45 => if theta > 0.0 {
+                TexturePixel::new_tuple(DashRight, DASHRIGHT_CHAR)
+            } else {
+                TexturePixel::new_tuple(DashLeft, DASHLEFT_CHAR)
+            },
+        v if 0.55 < v && v < 0.9 => if theta < 0.0 {
+                TexturePixel::new_tuple(DashRight, DASHRIGHT_CHAR)
+            } else {
+                TexturePixel::new_tuple(DashLeft, DASHLEFT_CHAR)
+            },
+        _ => TexturePixel::empty(),
+    }
+
+    
+}
+
+fn sobel(texture: &Texture) -> Vec <TexturePixel<EdgePiece>> {
     let kernel_x = [
         [1.0, 0.0, -1.0],
         [2.0, 0.0, -2.0],
         [1.0, 0.0, -1.0],
     ];
-
-    let G_x = convolute(kernel_x, texture);
 
     let kernel_y = [
         [1.0, 2.0, 1.0],
@@ -92,79 +167,59 @@ fn apply_sobel(texture: &mut Texture) {
         [-1.0, -2.0, -1.0],
     ];
 
-    let G_y = convolute(kernel_y, texture);
+    let grayscale_texture = grayscale(texture);
 
-    texture.data = (0..G_x.data.len())
-        .map(|i| {
-            let x2 = if let TexturePixel(Some((val, _c))) = G_x.data[i] { val * val } else { 0.0 };
-            let y2 = if let TexturePixel(Some((val, _c))) = G_y.data[i] { val * val } else { 0.0 };
-
-            let gs = f64::sqrt(x2 + y2);
-
-            TexturePixel(Some((Color::Rgb {
-                r: gs as u8,
-                g: gs as u8,
-                b: gs as u8,
-            },
-            '*')))
-        })
+    (0..texture.data.len())
+        .map(|i| sobel_transform(&grayscale_texture, &kernel_x, &kernel_y, i))
         .collect()
 }
 
-fn convolute(kernel: [[f64; 3]; 3], texture: &Texture) -> Texture<GrayScale> {
-    let grayscale_texture = grayscale(texture);
+fn convolute_transform(kernel: &[[f64; 3]; 3], texture: &Texture<GrayScale>, ix: usize) -> TexturePixel<GrayScale> {
+    let (p_x, p_y) = texture.position(ix);
 
-    Texture {
-        width: texture.width,
-        height: texture.height,
-        data: (0..grayscale_texture.data.len())
-            .map(|ix| {
-                let (p_x, p_y) = texture.position(ix);
+    let mut conv_pixel = 0.0;
 
-                let mut conv_pixel = 0.0;
+    let pixel_char = texture.data[ix].char_or(LIGHNTESS.chars().nth(0).unwrap());
 
+    for x in -1..=1 {
+        for y in -1..=1 {
+            if p_x as i32 + x < 0 
+                || p_x as i32 + x >= texture.width as i32
+                    || p_y as i32 + y < 0
+                    || p_y as i32 + y >= texture.height as i32 {
+                        continue;
+            }
 
-                for x in -1..=1 {
-                    for y in -1..=1 {
-                        if p_x as i32 + x < 0 
-                            || p_x as i32 + x >= texture.width as i32
-                            || p_y as i32 + y < 0
-                            || p_y as i32 + y >= texture.height as i32 {
-                            continue;
-                        }
+            let pixel_color = texture.get(x + p_x as i32, y + p_y as i32).color_or(0.0);
 
-                        let pixel_color = if let &TexturePixel::<GrayScale>(Some((color, _))) = grayscale_texture.get(x + p_x as i32, y + p_y as i32) { color } else { 0.0 };
-
-                        conv_pixel += kernel[(1 + x) as usize][(1 + y) as usize] * pixel_color;
-                    }
-                }
-
-                TexturePixel(Some((conv_pixel, '*')))
-            })
-            .collect()
+            conv_pixel += kernel[(1 + x) as usize][(1 + y) as usize] * pixel_color;
+        }
     }
+
+    TexturePixel::new_tuple(conv_pixel, pixel_char)
+}
+
+fn grayscale_transform(pixel: &TexturePixel) -> TexturePixel<GrayScale> {
+    pixel.map(|pixel_data| {
+        let pixel_color = pixel_data.0;
+        let pixel_char = pixel_data.1;
+
+        if let Color::Rgb {r, g, b } = pixel_color {
+            (0.299 * r as f64 + 0.587 * g as f64 + 0.114 + b as f64, pixel_char)
+        } else {
+            (0.0, pixel_char)
+        }
+    })
 }
 
 fn grayscale(texture: &Texture) -> Texture<GrayScale> {
-    let grayscale_transform = 
-        |color| if let Color::Rgb { r, g, b } = color {
-            0.299 * r as f64 + 0.587 * g as f64 + 0.114 + b as f64
-        } else {
-            0.0
-        };
-
     Texture {
         width: texture.width,
         height: texture.height,
         data: texture.data.iter()
-            .map(|&ref pixel| {
-                if let &TexturePixel(Some((color, c))) = pixel {
-                    TexturePixel(Some((grayscale_transform(color), c)))
-                } else  {
-                    TexturePixel(None)
-                }
-            })
-            .collect()
-    }
+            .map(grayscale_transform)
+            .collect(),
 
+        edge_texture: Vec::new(),
+    }
 }

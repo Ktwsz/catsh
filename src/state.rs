@@ -13,6 +13,8 @@ const CAT_YELLOW: &str = "cats/Cat-1/Cat-1-Run.png";
 const CAT_YELLOW_FRAMES: u32 = 8;
 const CAT_BLACK: &str = "cats/Cat-2/Cat-2-Licking-1.png";
 const CAT_BLACK_FRAMES: u32 = 5;
+//const CAT_BLACK: &str = "test_circle.png";
+//const CAT_BLACK_FRAMES: u32 = 1;
 
 pub struct State {
     sprites: Vec <Sprite>,
