@@ -13,8 +13,6 @@ const CAT_YELLOW: &str = "cats/Cat-1/Cat-1-Run.png";
 const CAT_YELLOW_FRAMES: u32 = 8;
 const CAT_BLACK: &str = "cats/Cat-2/Cat-2-Licking-1.png";
 const CAT_BLACK_FRAMES: u32 = 5;
-//const CAT_BLACK: &str = "test_circle.png";
-//const CAT_BLACK_FRAMES: u32 = 1;
 
 pub struct State {
     sprites: Vec <Sprite>,
@@ -25,11 +23,11 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(sprite_show: crate::ShowSprite) -> Self {
+    pub fn new() -> Self {
         State {
             sprites: vec![
-                Sprite::new(CAT_YELLOW, CAT_YELLOW_FRAMES, sprite_show).set_pos(-30, 0),
-                Sprite::new(CAT_BLACK, CAT_BLACK_FRAMES, sprite_show).set_pos(30, 10),
+                Sprite::new(CAT_YELLOW, CAT_YELLOW_FRAMES).set_pos(-30, 0),
+                Sprite::new(CAT_BLACK, CAT_BLACK_FRAMES).set_pos(30, 10),
             ],
 
             animation_ctr: 0,
@@ -59,18 +57,18 @@ impl State {
     }
     
 
-    pub fn draw_frame(&self, stdout: &mut Stdout, terminal_size: &(u16, u16)) -> io::Result<()> {
+    pub fn draw_frame(&self, stdout: &mut Stdout, terminal_size: &(u16, u16), sprite_show_layer: crate::debug::ShowSprite) -> io::Result<()> {
         stdout.execute(terminal::Clear(terminal::ClearType::All))?;
 
 
-        self.draw_sprite(stdout, terminal_size, 0)?;
-        self.draw_sprite(stdout, terminal_size, 1)?;
+        self.draw_sprite(stdout, terminal_size, 0, sprite_show_layer)?;
+        self.draw_sprite(stdout, terminal_size, 1, sprite_show_layer)?;
 
         stdout.flush()?;
         Ok(())
     }
 
-    fn draw_sprite(&self, stdout: &mut Stdout, terminal_size: &(u16, u16), sprite_id: usize) -> io::Result<()> {
+    fn draw_sprite(&self, stdout: &mut Stdout, terminal_size: &(u16, u16), sprite_id: usize, sprite_show_layer: crate::debug::ShowSprite) -> io::Result<()> {
         let sprite = &self.sprites[sprite_id];
 
         for w in 0..sprite.width {
@@ -81,7 +79,7 @@ impl State {
                 }
 
 
-                if let TexturePixel(Some((color, c))) = sprite.pixel_at(w, h) { 
+                if let TexturePixel(Some((color, c))) = sprite.pixel_at(w, h, sprite_show_layer) { 
                     stdout
                         .queue(cursor::MoveTo(coord.0 as u16, coord.1 as u16))?
                         .queue(style::SetForegroundColor(color))?

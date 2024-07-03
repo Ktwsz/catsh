@@ -11,8 +11,8 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub fn new(texture_path: &str, frame_count: u32, sprite_show: crate::ShowSprite) -> Self {
-        let frame_vec = FrameVec::from_image(texture_path, frame_count, sprite_show).unwrap();
+    pub fn new(texture_path: &str, frame_count: u32) -> Self {
+        let frame_vec = FrameVec::from_image(texture_path, frame_count).unwrap();
 
 
         Sprite {
@@ -36,11 +36,11 @@ impl Sprite {
         self
     }
 
-    pub fn pixel_at(&self, x: u32, y: u32) -> TexturePixel {
+    pub fn pixel_at(&self, x: u32, y: u32, sprite_show_layer: crate::debug::ShowSprite) -> TexturePixel {
         let w = x;
         let h = y;
 
-        self.frame_vec.get_frame().get_draw_pixel(w as i32, h as i32) 
+        self.frame_vec.get_frame().get_draw_pixel(w as i32, h as i32, sprite_show_layer) 
     }
 
 }

@@ -1,5 +1,6 @@
 use image::{RgbaImage, Rgba};
 use crossterm::style::Color;
+use crate::debug::ShowSprite;
 
 const LIGHNTESS: &str = ".;coPO?#%@";
 
@@ -86,7 +87,7 @@ pub struct Texture <T = Color> {
 }
 
 impl Texture {
-    pub fn from_image(image: &RgbaImage, current_frame: u32, frame_count: u32, sprite_show: crate::ShowSprite) -> Self {
+    pub fn from_image(image: &RgbaImage, current_frame: u32, frame_count: u32) -> Self {
         let frame_width = image.width() / frame_count;
         let frame_height = image.height();
 
@@ -109,16 +110,22 @@ impl Texture {
         texture
     }
 
-    pub fn get_draw_pixel(&self, x: i32, y: i32) -> TexturePixel {
-        let ix = (self.height as i32 * x + y) as usize;
+    pub fn get_draw_pixel(&self, x: i32, y: i32, show_mask: ShowSprite) -> TexturePixel {
+        use ShowSprite::*;
+        match show_mask {
+            Final => *self.get(x, y),
+            Sobel => {
+                let ix = (self.height as i32 * x + y) as usize;
 
-        let pixel_color = &self.data[ix].color_or(Color::Black);
-        let pixel_char = &self.data[ix].char_or(' ');
+                let pixel_color = &self.data[ix].color_or(Color::Black);
+                let pixel_char = &self.data[ix].char_or(' ');
 
-        let edge_piece = &self.edge_texture[ix].char_or(*pixel_char);
+                let edge_piece = &self.edge_texture[ix].char_or(*pixel_char);
 
 
-        TexturePixel::new_tuple(*pixel_color, *edge_piece)
+                TexturePixel::new_tuple(*pixel_color, *edge_piece)
+            }
+        }
     }
 }    
 
