@@ -2,8 +2,13 @@ pub mod sprite;
 pub mod framevec;
 pub mod texture;
 pub mod state;
+pub mod animation;
+pub mod position;
 
+use crate::animation::Interpolator;
 use state::State;
+use position::Position;
+use std::time::Duration;
 
 use std::io;
 use crossterm::{
@@ -28,6 +33,8 @@ pub mod debug {
 }
 
 use crate::debug::{Binding, ShowSprite};
+
+
 fn main() -> io::Result<()>{
     let mut debug_binding = Binding {
         is_animation_running: true,
@@ -35,6 +42,11 @@ fn main() -> io::Result<()>{
     };
 
     let mut cats_state = State::new();
+
+    cats_state.get_sprite_mut(0).position.set_animation(
+        Duration::from_millis(6000),
+        Interpolator::linear(Position::zero(), Position::new(50.0, 0.0)),
+    );
 
     let fps = 60.0;
     let tick_rate = time::Duration::from_millis(f64::floor(1000.0 / fps) as u64);

@@ -1,11 +1,14 @@
 use crate::framevec::FrameVec;
 use crate::texture::TexturePixel;
+use crate::position::Position;
+use crate::animation::AnimateProperty;
+
+use std::time::Duration;
 
 pub struct Sprite {
     pub width: u32,
     pub height: u32,
-    pub x: i32,
-    pub y: i32,
+    pub position: AnimateProperty<Position>,
 
     pub frame_vec: FrameVec,
 }
@@ -16,21 +19,17 @@ impl Sprite {
 
 
         Sprite {
-            x: 0,
-            y: 0,
+            position: AnimateProperty::new(Position::zero()),
             width: frame_vec.frame_width(),
             height: frame_vec.frame_height(),
             frame_vec,
         }
     }
 
-    pub fn set_pos(mut self, x: i32, y: i32) -> Self {
-        self.x = x;
-        self.y = y;
-
-        self
+    pub fn set_pos(mut self, pos: Position) -> Self {
+       self.position.property = pos;
+       self
     }
-
 
     pub fn resize(self, width: u32, height: u32) -> Self {
         self
@@ -41,6 +40,10 @@ impl Sprite {
         let h = y;
 
         self.frame_vec.get_frame().get_draw_pixel(w as i32, h as i32, sprite_show_layer) 
+    }
+
+    pub fn update(&mut self, dt: Duration) {
+        self.position.update(dt);
     }
 
 }
