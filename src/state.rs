@@ -1,8 +1,7 @@
 use crate::{
     sprite::Sprite,
-    position::Position,
+    texture::TexturePixel,
 };
-use crate::texture::TexturePixel;
 
 use std::{
     io::{self, Write, Stdout},
@@ -13,22 +12,14 @@ use crossterm::{
     terminal, cursor, style::{self},
 };
 
-const CAT_YELLOW: &str = "cats/Cat-1/Cat-1-Run.png";
-const CAT_YELLOW_FRAMES: u32 = 8;
-const CAT_BLACK: &str = "cats/Cat-2/Cat-2-Licking-1.png";
-const CAT_BLACK_FRAMES: u32 = 5;
-
 pub struct State {
     pub sprites: Vec <Sprite>,
 }
 
 impl State  {
-    pub fn new() -> Self {
+    pub fn new(sprites: Vec<Sprite>) -> Self {
         State {
-            sprites: vec![
-                Sprite::new(CAT_YELLOW, CAT_YELLOW_FRAMES).set_pos(Position::new(-30.0, 0.0)),
-                Sprite::new(CAT_BLACK, CAT_BLACK_FRAMES).set_pos(Position::new(30.0, 10.0)),
-            ],
+            sprites
         }
     }
 

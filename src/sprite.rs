@@ -1,7 +1,9 @@
-use crate::framevec::FrameVec;
-use crate::texture::TexturePixel;
-use crate::position::Position;
-use crate::animation::AnimateProperty;
+use crate::{
+    animation::AnimateProperty,
+    framevec::FrameVec,
+    position::Position,
+    texture::TexturePixel,
+};
 
 use std::time::Duration;
 

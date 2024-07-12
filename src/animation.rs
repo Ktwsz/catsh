@@ -1,5 +1,7 @@
-use std::time::Duration;
-use std::ops::{Add, Sub, Mul};
+use std::{
+    time::Duration,
+    ops::{Add, Sub, Mul},
+};
 
 pub struct Interpolator<Item> 
     where Item: Add<Output=Item> + Sub<Output=Item> + Mul<f64, Output=Item> + Copy + Clone
